@@ -10,11 +10,23 @@
 大部分涉及同一类间的运算已定义
 涉及与int之间的运算，如bigint+int，需要为int类型创建一个bigint***
 */
+//class bigint;
 class bigint{
   private:
   bool negative=false;
   std::vector<int> value;
-  friend std::ostream& operator<<(std::ostream& _out,const bigint& __a);
+  friend std::ostream& operator<<(std::ostream& _out, const bigint& __a);
+  friend bigint operator+(const int __a, const bigint& __b);
+  friend bigint operator-(const int __a, const bigint& __b);
+  friend bigint operator*(const int __a, const bigint& __b);
+  friend bigint operator/(const int __a, const bigint& __b);
+  friend bigint operator%(const int __a, const bigint& __b);
+  friend bool operator==(const int __a, const bigint& __b);
+  friend bool operator!=(const int __a, const bigint& __b);
+  friend bool operator<(const int __a, const bigint& __b);
+  friend bool operator<=(const int __a, const bigint& __b);
+  friend bool operator>(const int __a, const bigint& __b);
+  friend bool operator>=(const int __a, const bigint& __b);
   bool init_from_vect(std::vector<int>&number){//从内部位数数组构造
     value.clear();
     for(auto v : number){//与原数组顺序不变，倒序
@@ -30,7 +42,19 @@ class bigint{
   //   }
   //   return result;
   // }
-  
+
+  static int compare(const std::vector<int>& __x,const std::vector<int>& __y){//比较绝对值
+    if(__x.size() != __y.size()){
+      return __x.size() - __y.size();
+    }else{
+      for(size_t i = __x.size();i > 0;i--){
+        if(__x[i-1] != __y[i-1]){
+          return __x[i-1] - __y[i-1];
+        }
+      }
+    }
+    return 0;//x==y
+  }
   static bigint bint_add(const std::vector<int>& __x,const std::vector<int>& __y){//加法运算都为正数，调用需检验
     size_t cur=0, x_size=__x.size(), y_size=__y.size();
     int carry=0;//进位
@@ -49,19 +73,6 @@ class bigint{
     return answer;
   }
   
-  static int compare(const std::vector<int>& __x,const std::vector<int>& __y){//比较绝对值
-    if(__x.size() != __y.size()){
-      return __x.size() - __y.size();
-    }else{
-      for(size_t i = __x.size();i > 0;i--){
-        if(__x[i-1] != __y[i-1]){
-          return __x[i-1] - __y[i-1];
-        }
-      }
-    }
-    return 0;//x==y
-  }
-
   static bigint bint_sub(const std::vector<int>& __x,const std::vector<int>& __y){//减法，x-y,需保证x>y
     int borrow = 0;
     std::vector<int> result;
@@ -107,7 +118,7 @@ class bigint{
       int l=0, r=9, m=0, x=0; 
       while (l <= r) {//二分查找
         m = (l + r) / 2;
-        bigint t = divisor.mtp(m);
+        bigint t = divisor * m;
         if (compare(t.value, remainder.value) < 0){
           x = m;
           l = m + 1;
@@ -121,7 +132,7 @@ class bigint{
       quotient.value.insert(quotient.value.begin(),x);//在前方添加元素
       quotient.del_lead_zero();
       //quotient.dbg_show();
-      remainder = remainder - divisor.mtp(x);
+      remainder = remainder - divisor * x;
       remainder.del_lead_zero();
       //remainder.dbg_show();    
     }
@@ -139,9 +150,7 @@ class bigint{
   }
 
   public:
-  // size_t size(void){
-  //   return value.size();
-  // }
+  
   bigint(): negative(false){};
 
   bigint(std::string& number){//从std::string构造
@@ -191,20 +200,20 @@ class bigint{
     return true;
   }
   
-  bool iszero(void){//为零？
-    del_lead_zero();
+  bool iszero(void)const{//为零？
+    //del_lead_zero();
     return value.size() == 1 && value[0] == 0;
   }
-  // bigint operator=(const int num)const{//
-  //   bigint answer(num);
-  //   return answer;
-  // } 
   
   bigint& operator=(const bigint& other){
     this->negative = other.negative;
     this->value = other.value;
     return *this;
   }
+  bigint& operator=(const int num){
+    bigint answer(num);
+    return *this = answer;
+  } 
   
   bigint operator+(const bigint& other)const{
     bigint answer;
@@ -227,6 +236,9 @@ class bigint{
       }
     }
   }
+  bigint operator+(const int num)const{
+    return *this + bigint(num);
+  }
   
   bigint operator-(const bigint& other)const{
     bigint answer;
@@ -246,6 +258,9 @@ class bigint{
       return answer;
     }
   }
+  bigint operator-(const int num)const{
+    return *this - bigint(num);
+  }
   
   bigint operator-()const{//一元减
     bigint answer = *this;
@@ -258,7 +273,10 @@ class bigint{
     answer.negative = negative ^ other.negative;
     return answer;
   }
-  
+  bigint operator*(const int num)const{
+    return *this * bigint(num);
+  }
+
   bigint operator/(const bigint& other)const{
     bigint answer;
     if(compare(value, other.value)<0){
@@ -270,6 +288,9 @@ class bigint{
     }
     answer.negative = negative ^ other.negative;
     return answer;
+  }
+  bigint operator/(const int num)const{
+    return *this / bigint(num);
   }
   
   bigint operator%(const bigint& other)const{
@@ -284,6 +305,9 @@ class bigint{
     answer.negative = negative;//^other.negative;
     return answer;
   }
+  bigint operator%(const int num)const{
+    return *this % bigint(num);
+  }
   
   bool operator==(const bigint& other)const{
     if(negative != other.negative) return false;
@@ -293,7 +317,6 @@ class bigint{
     }
     return true;
   }
-  
   bool operator==(const int a)const{
     return *this == bigint(a);
   }
@@ -301,11 +324,59 @@ class bigint{
   bool operator!=(const bigint& other)const{
     return !(*this == other);
   }
-  
-  bool operator!=(const int a)const{
-    return !(*this == a);
+  bool operator!=(const int num)const{
+    return !(*this == num);
   }
-  //bigint pow(const int __a){}
+  
+  bool operator<(const bigint& other)const{
+    if(negative != other.negative){
+      return negative;
+    }else{
+      return negative | (compare(value, other.value) < 0);
+    }
+  }
+  bool operator<(const int num)const{
+    return *this < bigint(num);
+  }
+  
+  bool operator<=(const bigint& other)const{
+    return *this < other || *this == other;
+  }
+  bool operator<=(const int num)const{
+    return *this <= bigint(num);
+  }
+  
+  bool operator>(const bigint& other)const{
+    return !(*this <= other);
+  }
+  bool operator>(const int num)const{
+    return *this > bigint(num);
+  }
+  
+  bool operator>=(const bigint& other)const{
+    return !(*this < other);
+  }
+  bool operator>=(const int num)const{
+    return *this >= bigint(num);
+  }
+  
+  bigint operator++(int){//后置自增
+    *this = *this + 1;
+    return *this - 1;
+  }
+  bigint& operator++(){//前置自增
+    *this = *this + 1;
+    return *this;
+  }
+
+  bigint operator--(int){//后置自减
+    *this = *this - 1;
+    return *this + 1;
+  }
+  bigint& operator--(){//前置自减
+    *this = *this - 1;
+    return *this;
+  }
   
   bigint pow(const bigint& __a){
     std::vector<int> zero(1,0), one(1,1), two(1,2);
@@ -324,7 +395,13 @@ class bigint{
       temp = bint_mtp(temp.value, temp.value);
       //temp.dbg_show();answer.dbg_show();
     }
+    if(negative && __a % 2 == 1){
+      answer.negative = true;
+    } 
     return answer;
+  };
+  bigint pow(const int __a){
+    return pow(bigint(__a));
   };
   
   bigint powmod(const bigint &__a,const bigint & _mod){
@@ -348,9 +425,19 @@ class bigint{
     }
     return answer;
   };
+  bigint powmod(const int __a,const int _mod){
+    return powmod(bigint(__a), bigint(_mod));
+  }
+  bigint powmod(const int __a,const bigint & _mod){
+    return powmod(bigint(__a), _mod);
+  }
+  bigint powmod(const bigint &__a,const int _mod){
+    return powmod(__a, bigint(_mod));
+  }
   
-  int trans(void)const{//将较小数字转为int
-    int t, base=1;
+  //可能导致溢出
+  long long int trans(void)const{//将较小数字转为int
+    long long int t, base=1;
     for(auto a : value){
       t += a * base;
       base *= 10;
@@ -358,21 +445,61 @@ class bigint{
     return t;
   }
 
-  bigint mtp(const int __a)const{//与小int相乘
-    bigint a(__a);
-    return bint_mtp(value, a.value);
-  }
-
 };//class
 
-  std::ostream& operator<<(std::ostream& _os, const bigint& __a){
-    //__a.dbg_show();
-    if(__a.negative && __a.value.size() != 0)_os << '-';
-    size_t size = __a.value.size();
-    for(int i = size-1; i >= 0; i--){
-      _os << __a.value[i];
-    }
-    _os << std::endl;
-    return _os;
+std::ostream& operator<<(std::ostream& _os, const bigint& __a){
+  //__a.dbg_show();
+  if(__a.negative && __a.value.size() != 0)_os << '-';
+  size_t size = __a.value.size();
+  for(int i = size-1; i >= 0; i--){
+    _os << __a.value[i];
   }
+  //_os << std::endl;
+  return _os;
+}
+bigint operator+(const int __a, const bigint& __b){
+  return __b + __a;
+}
+bigint operator-(const int __a,const bigint& __b){
+  return -__b + __a;
+}
+bigint operator*(const int __a,const bigint& __b){
+  return __b * __a;
+}
+bigint operator/(const int __a,const bigint& __b){
+  return bigint(__a) / __b;
+}
+bigint operator%(const int __a, const bigint& __b){
+  return bigint(__a) % __b;
+}
+bool operator==(const int __a, const bigint& __b){
+  return __b == __a;
+}
+bool operator!=(const int __a, const bigint& __b){
+  return __b != __a;
+}
+bool operator<(const int __a, const bigint& __b){
+  return __b > __a;
+}
+bool operator<=(const int __a, const bigint& __b){
+  return __b >= __a;
+}
+bool operator>(const int __a, const bigint& __b){
+  return __b < __a;
+}
+bool operator>=(const int __a, const bigint& __b){
+  return __b <= __a;
+}
+
+bigint gcd(const bigint& a, const bigint& b){
+  if(a.iszero() || b.iszero()) return bigint(0);
+  if(a == b) return a;
+  if(a < b) return gcd(b, a);
+  return gcd(b, a % b);
+}
+
+bigint lcm(const bigint& a, const bigint& b){
+  if(a.iszero() || b.iszero()) return bigint(0);
+  return (a * b) / gcd(a, b);
+}
 #endif
